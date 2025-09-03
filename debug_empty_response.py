@@ -24,7 +24,7 @@ from api.services import get_bhashini_service, APIError
 
 def create_simple_hindi_audio():
     """Create a simple audio file with some content"""
-    print("🎵 Creating test audio...")
+    print("Creating test audio...")
     
     try:
         # Create a longer audio file (5 seconds)
@@ -50,18 +50,18 @@ def create_simple_hindi_audio():
             
             os.unlink(temp_file.name)
         
-        print(f"✅ Test audio created: {len(audio_b64)} characters")
-        print(f"📊 Audio stats: {duration}s, {sample_rate}Hz, {len(audio_data)} samples")
+        print(f"Test audio created: {len(audio_b64)} characters")
+        print(f"Audio stats: {duration}s, {sample_rate}Hz, {len(audio_data)} samples")
         
         return audio_b64
         
     except Exception as e:
-        print(f"❌ Test audio creation failed: {str(e)}")
+        print(f"Test audio creation failed: {str(e)}")
         return None
 
 def test_bhashini_detailed():
     """Test Bhashini with detailed logging"""
-    print("🧪 Testing Bhashini Service with Debug Info...")
+    print("Testing Bhashini Service with Debug Info...")
     print("=" * 60)
     
     try:
