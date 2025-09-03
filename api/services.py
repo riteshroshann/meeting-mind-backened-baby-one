@@ -409,6 +409,276 @@ class BhashiniService:
             {"code": "si", "name": "Sinhala"}
         ]
     
+    def speaker_diarization(self, audio_base64, service_id="ai4bharat/whisper-medium-hi--gpu--t4"):
+        """
+        Perform speaker diarization using Bhashini API following official documentation.
+        
+        Args:
+            audio_base64 (str): Base64 encoded audio data
+            service_id (str): Service ID for speaker diarization
+            
+        Returns:
+            dict: Speaker diarization results with speakers list and metadata
+            
+        Raises:
+            APIError: If the API request fails or returns invalid data
+        """
+        # Use the official Bhashini endpoint from documentation
+        url = "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
+        
+        try:
+            # Decode and resample audio
+            audio_data = base64.b64decode(audio_base64)
+            
+            # Resample audio to 16kHz (critical for Bhashini)
+            try:
+                y_resampled, sr = self.load_and_resample_audio(audio_data)
+                if y_resampled is not None:
+                    resampled_audio_b64 = self.audio_to_base64(y_resampled, sr)
+                    logger.info("Audio resampled to 16kHz for speaker diarization")
+                else:
+                    logger.warning("Audio resampling failed, using original")
+                    resampled_audio_b64 = audio_base64
+            except Exception as e:
+                logger.warning(f"Audio resampling failed, using original: {str(e)}")
+                resampled_audio_b64 = audio_base64
+            
+            # Speaker Diarization payload following official Bhashini documentation
+            payload = {
+                "pipelineTasks": [
+                    {
+                        "taskType": "speaker-diarization",
+                        "config": {
+                            "serviceId": service_id
+                        }
+                    }
+                ],
+                "inputData": {
+                    "audio": [
+                        {
+                            "audioContent": resampled_audio_b64
+                        }
+                    ]
+                }
+            }
+            
+            headers = {
+                "Authorization": self.api_token,
+                "Accept": "*/*",
+                "Content-Type": "application/json"
+            }
+            
+            # Make API request with retry logic
+            for attempt in range(self.max_retries):
+                try:
+                    response = requests.post(url, json=payload, headers=headers, timeout=120)
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        logger.info(f"Speaker diarization API response received (attempt {attempt + 1})")
+                        
+                        # Process the response following Bhashini documentation format
+                        pipeline_response = result.get("pipelineResponse", [])
+                        if not pipeline_response:
+                            logger.error("Speaker diarization response missing pipelineResponse")
+                            raise APIError("Incomplete speaker diarization response", 500, "bhashini")
+                        
+                        # Find speaker-diarization output
+                        speaker_output = None
+                        for task_result in pipeline_response:
+                            if task_result.get("taskType") == "speaker-diarization":
+                                speaker_output = task_result.get("output", [])
+                                break
+                        
+                        if not speaker_output:
+                            logger.error("No speaker-diarization output found")
+                            raise APIError("No speaker diarization results in response", 500, "bhashini")
+                        
+                        # Format speaker data according to Bhashini response format
+                        formatted_speakers = self._format_bhashini_speaker_data(speaker_output)
+                        
+                        logger.info(f"Speaker Diarization completed: {len(formatted_speakers)} speakers identified")
+                        
+                        return {
+                            'speakers': formatted_speakers,
+                            'speaker_count': len(formatted_speakers),
+                            'speaker_labels': [f"Speaker {i+1}" for i in range(len(formatted_speakers))],
+                            'status': 'success',
+                            'raw_output': speaker_output  # Include raw output for debugging
+                        }
+                    
+                    else:
+                        logger.warning(f"Speaker diarization attempt {attempt + 1} failed: {response.status_code}")
+                        if attempt == self.max_retries - 1:
+                            raise APIError(f"Speaker diarization failed: {response.status_code}", response.status_code, "bhashini")
+                        time.sleep(2 ** attempt)  # Exponential backoff
+                        
+                except requests.exceptions.RequestException as e:
+                    logger.warning(f"Speaker diarization network error (attempt {attempt + 1}): {str(e)}")
+                    if attempt == self.max_retries - 1:
+                        raise APIError(f"Network error in speaker diarization: {str(e)}", 500, "network")
+                    time.sleep(2 ** attempt)
+                    
+        except APIError:
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error in speaker diarization: {str(e)}")
+            raise APIError(f"Speaker diarization processing error: {str(e)}", 500, "processing")
+
+    def _format_bhashini_speaker_data(self, speaker_output):
+        """
+        Format raw Bhashini speaker diarization output into structured speaker data.
+        
+        Args:
+            speaker_output (list): Raw speaker output from Bhashini API
+            
+        Returns:
+            list: Formatted speaker data with timing and metadata
+        """
+        speakers = []
+        speaker_times = {}
+        
+        try:
+            if speaker_output and len(speaker_output) > 0:
+                # Handle Bhashini response format: speaker_labels array
+                speaker_data = speaker_output[0] if isinstance(speaker_output, list) else speaker_output
+                
+                if isinstance(speaker_data, dict) and "speaker_labels" in speaker_data:
+                    speaker_labels = speaker_data["speaker_labels"]
+                    
+                    if isinstance(speaker_labels, list) and len(speaker_labels) > 0:
+                        # Process each speaker label entry
+                        for label_entry in speaker_labels:
+                            if isinstance(label_entry, dict):
+                                for speaker_id, segments in label_entry.items():
+                                    if speaker_id not in speaker_times:
+                                        speaker_times[speaker_id] = {
+                                            'speaker_id': speaker_id,
+                                            'segments': [],
+                                            'total_duration': 0
+                                        }
+                                    
+                                    # Process segments for this speaker
+                                    if isinstance(segments, list):
+                                        for segment in segments:
+                                            if isinstance(segment, dict):
+                                                start_time = float(segment.get('start_time', 0))
+                                                duration = float(segment.get('duration', 0))
+                                                end_time = start_time + duration
+                                                
+                                                speaker_times[speaker_id]['segments'].append({
+                                                    'start_time': start_time,
+                                                    'end_time': end_time,
+                                                    'duration': duration
+                                                })
+                                                speaker_times[speaker_id]['total_duration'] += duration
+                
+                # Convert to sorted list by total speaking time
+                speakers = sorted(speaker_times.values(), key=lambda x: x['total_duration'], reverse=True)
+                
+                # Add speaker labels
+                for i, speaker in enumerate(speakers):
+                    speaker['label'] = f"Speaker {i+1}"
+                    speaker['percentage'] = round((speaker['total_duration'] / sum(s['total_duration'] for s in speakers)) * 100, 1) if speakers else 0
+                    
+        except Exception as e:
+            logger.warning(f"Error formatting Bhashini speaker data: {str(e)}")
+            
+        return speakers
+
+    def process_audio_with_speakers(self, audio_base64, source_lang, target_lang, audio_format="wav", include_diarization=True):
+        """
+        Enhanced audio processing with optional speaker diarization.
+        
+        Args:
+            audio_base64 (str): Base64 encoded audio data
+            source_lang (str): Source language code
+            target_lang (str): Target language code  
+            audio_format (str): Audio format (default: wav)
+            include_diarization (bool): Whether to include speaker diarization
+            
+        Returns:
+            dict: Enhanced processing results with speaker information
+            
+        Raises:
+            APIError: If processing fails
+        """
+        try:
+            # First, perform standard audio processing
+            standard_result = self.process_audio(audio_base64, source_lang, target_lang, audio_format)
+            
+            # If speaker diarization is requested, add it
+            if include_diarization:
+                try:
+                    speaker_result = self.speaker_diarization(audio_base64)
+                    logger.info(f"Speaker Diarization completed: {speaker_result.get('speaker_count', 0)} speakers")
+                    
+                    # Combine results
+                    combined_result = standard_result.copy()
+                    combined_result.update({
+                        'speakers': speaker_result.get('speakers', []),
+                        'speaker_count': speaker_result.get('speaker_count', 0),
+                        'speaker_labels': speaker_result.get('speaker_labels', []),
+                        'diarization_status': 'completed'
+                    })
+                    
+                except Exception as e:
+                    logger.warning(f"Speaker diarization failed, continuing without: {str(e)}")
+                    combined_result = standard_result.copy()
+                    combined_result.update({
+                        'speakers': [],
+                        'speaker_count': 0,
+                        'speaker_labels': [],
+                        'diarization_status': 'failed'
+                    })
+            else:
+                combined_result = standard_result.copy()
+                combined_result.update({
+                    'speakers': [],
+                    'speaker_count': 0,
+                    'speaker_labels': [],
+                    'diarization_status': 'disabled'
+                })
+            
+            logger.info(f"Enhanced processing completed: transcript={len(combined_result.get('transcription', ''))}, speakers={combined_result.get('speaker_count', 0)}")
+            return combined_result
+            
+        except Exception as e:
+            logger.error(f"Enhanced audio processing failed: {str(e)}")
+            raise APIError(f"Enhanced processing error: {str(e)}", 500, "processing")
+
+    def get_supported_speaker_diarization_services(self):
+        """
+        Get list of supported speaker diarization services from Bhashini.
+        
+        Returns:
+            list: Available speaker diarization services
+        """
+        # Based on Bhashini documentation and available models
+        return [
+            {
+                "serviceId": "ai4bharat/whisper-medium-hi--gpu--t4",
+                "name": "Whisper Medium Hindi GPU",
+                "description": "High-accuracy speaker diarization for Hindi and multilingual content",
+                "languages": ["hi", "en", "mr", "gu", "ta", "te", "kn", "ml", "pa", "bn", "or", "as"],
+                "endpoint": "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
+            },
+            {
+                "serviceId": "ai4bharat/whisper-large-v2-hi--gpu--t4", 
+                "name": "Whisper Large v2 Hindi GPU",
+                "description": "Premium speaker diarization with highest accuracy",
+                "languages": ["hi", "en", "mr", "gu", "ta", "te", "kn", "ml", "pa", "bn", "or", "as"],
+                "endpoint": "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
+            },
+            {
+                "serviceId": "ai4bharat/conformer-hi-gpu--t4",
+                "name": "Conformer Hindi GPU",
+                "description": "Optimized speaker diarization for Hindi content", 
+                "languages": ["hi", "en"],
+                "endpoint": "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
+            }
+        ]
+    
     def get_supported_audio_formats(self) -> List[str]:
         """Get supported audio formats"""
         return ["wav", "mp3", "flac", "m4a", "ogg"]

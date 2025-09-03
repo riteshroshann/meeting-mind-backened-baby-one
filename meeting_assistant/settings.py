@@ -37,6 +37,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '0.0.0.0',
+    'testserver',  # For Django test client
     '.onrender.com',
     '.railway.app',
     '.vercel.app',
