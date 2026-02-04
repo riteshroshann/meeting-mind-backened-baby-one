@@ -16,16 +16,39 @@
 
 ---
 
-## 1. Abstract
+## 1. Project Profile: The Bhashini-Powered M3S
 
-**MeetingMind** constructs a deterministic bridge between unstructured acoustic signals and structured interrogation. Operating as a **Neural Orchestration Engine**, the system ingests high-fidelity audio, normalizes it through a rigorous signal processing pipeline (`AudioProc`), and routes it through a distributed inference substrate comprising **Bhashini (Dhruva)** for phoneme-level ASR and **Gemini Pro** for semantic reasoning.
+> **Status**: National Level Startup Accelerator Initiative — **Grand Finale Finalist** (Stage 3 Qualified).
 
-The architecture solves for the **Multilingual Enterprise**, achieving:
-*   **Acoustic Fidelity**: **≈98% WER reduction** on Indic dialects via specialized acoustic models.
-*   **Semantic Synthesis**: Zero-shot action extraction utilizing Chain-of-Thought (CoT) prompting.
-*   **Humble Latency**: Optimized ingress/egress paths guaranteeing `O(1)` operational overhead relative to audio length.
+**MeetingMind**, also designated as the **Minutes of Meeting Management System (M3S)**, is a flagship innovation engineered for the "Bhashini Grand Challenge". It represents a paradigm shift in multilingual collaboration, designed to dismantle linguistic barriers in real-time.
 
-## 2. Methodology
+### 1.1. Introduction
+In today's globalized and digitally connected world, effective communication across different languages is essential for productive collaboration. Traditional meeting management systems often fall short in providing seamless multilingual support, creating barriers that lead to misunderstandings and reduced productivity.
+
+To address these challenges, we propose **M3S**. This solution envisions a virtual multi-user transcription ecosystem where:
+*   Participants communicate seamlessly in their preferred languages.
+*   Language barriers are overcome in real-time.
+*   Post-meeting intelligence (Summarization, MOM Generation) is automated via neural backends.
+
+### 1.2. Objectives
+Our primary objective is to develop a system that facilitates smooth communication through advanced transcription and translation technologies.
+*   **Adaptive Recognition**: Integrate multilingual speech recognition capable of identifying nuanced linguistic patterns, accents, and dialects.
+*   **Transcription Workbench**: Create a user-friendly interface for organizing, editing, and exporting transcribed content.
+*   **Document Editing**: Incorporate a comprehensive module for efficient text modification.
+*   **Custom formatting**: Support paragraph or bullet-point styles, speaker labels, and timestamps.
+*   **Real-Time Intelligence**: Provide live summarization and automatic Minutes of Meeting (MOM) generation.
+*   **Security**: Implement end-to-end encryption and session-based controls.
+
+### 1.3. Outcomes
+The solution delivers:
+*   **Barrier-Free Communication**: Enabling seamless, language-independent interactions.
+*   **Enhanced Productivity**: Real-time accuracy in transcription and translation.
+*   **Comprehensive Documentation**: Automated, accurate recording of meeting outcomes.
+*   **Secure Compliance**: A robust environment for managing sensitive meeting data.
+
+---
+
+## 2. Technical Methodology
 
 The system adheres to a strict **Hexagonal Architecture (Ports and Adapters)**, decoupling domain logic from the volatility of external neural providers.
 
