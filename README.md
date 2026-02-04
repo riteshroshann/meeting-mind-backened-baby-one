@@ -86,12 +86,42 @@ Translates internal domain objects into vendor-specific GRPC payloads.
 The diagram below illustrates the comprehensive state transition from raw acoustic pressure to structured semantic JSON, including error handling and state replication buffers.
 
 ```mermaid
-graph LR
-    classDef core fill:#2d2d2d,stroke:#5a5a5a,color:#fff,stroke-width:2px
-    classDef ext fill:#141414,stroke:#333,color:#888,stroke-dasharray: 5 5
-    classDef io fill:#004488,stroke:#0066cc,color:#fff
+graph TD
+    %% High-Fidelity "Awesome" Styling
+    classDef core fill:#0f172a,stroke:#3b82f6,stroke-width:3px,color:#e2e8f0,rx:5,ry:5
+    classDef ext fill:#1a1a1a,stroke:#d97706,stroke-width:2px,color:#fbbf24,stroke-dasharray: 5 5,rx:5,ry:5
+    classDef io fill:#1e293b,stroke:#a855f7,stroke-width:3px,color:#f8fafc,rx:5,ry:5
 
     Client[Client Interface] -->|Multipart Stream| Ingress
+    
+    subgraph "Core Domain Hexagon"
+        direction TB
+        Ingress[Signal Ingress]:::io -->|Buffer| TempFile[MemMapped Spool]:::core
+        TempFile -->|Raw Bytes| Validator[Magic Byte Check]:::core
+        
+        Validator -->|Valid PCM| Resampler[Polyphase FIR Filter]:::core
+        Resampler -->|16kHz Signal| Norm[Normalization Layer]:::core
+        
+        Norm -->|Float32 Tensor| Adapter[Neural Adapter]:::core
+        
+        subgraph "Reasoning Pipeline"
+            direction TB
+            Adapter -->|Token Stream| CoT[Chain-of-Thought]:::core
+            CoT -->|Action Items| Extractor[Entity Extractor]:::core
+            Extractor -->|JSON Schema| Engine[Inference Engine]:::core
+        end
+
+        Engine -->|Structured Object| Serializer[JSON Serializer]:::core
+        Serializer -->|HTTP 200| Egress[API Egress]:::io
+    end
+
+    subgraph "External Compute Substrate"
+        Adapter <== gRPC ==> Bhashini[Bhashini Neural Cloud]:::ext
+        Engine <== HTTPS ==> Vertex[Google Vertex AI]:::ext
+    end
+
+    Egress -->|JSON Response| Client
+```
     
     subgraph "Core Domain (Hexagon)"
         Ingress[Signal Ingress]:::io -->|Buffer| TempFile[MemMapped Spool]:::core
