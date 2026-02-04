@@ -10,7 +10,7 @@ services:
     startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile - --error-logfile - meeting_assistant.wsgi:application
     envVars:
       - key: DJANGO_SECRET_KEY
-        value: "f40eba18b7a9401cfa2236a9a348a735"
+        sync: false
       - key: DEBUG
         value: "False"
       - key: PYTHON_VERSION
@@ -18,17 +18,17 @@ services:
       - key: DJANGO_SETTINGS_MODULE
         value: "meeting_assistant.settings"
       - key: BHASHINI_API_KEY
-        value: "ZfWdt3Z4lzxuYIJOYzsfs-XfDLQ8RKlxh9O_d5FwTT4-zNhciB30Oy_mD2ceQ61h"
+        sync: false
       - key: BHASHINI_AUTH_TOKEN
-        value: "ZfWdt3Z4lzxuYIJOYzsfs-XfDLQ8RKlxh9O_d5FwTT4-zNhciB30Oy_mD2ceQ61h"
+        sync: false
       - key: BHASHINI_USER_ID
-        value: "e58ce2d5ccf248f085c64eac0f00e45e"
+        sync: false
       - key: GEMINI_API_KEY
-        value: "AIzaSyCO1W1_b-wF6_j1X-3Tsz52b0pDCeAk2CA"
+        sync: false
       - key: ULCA_API_KEY
-        value: "3487cb2cbe-1d62-413f-b82f-8b2785e9b1b9"
+        sync: false
       - key: FRONTEND_URL
-        value: "https://v0-meeting-mind-audio-translation.vercel.app/"
+        sync: false
     disk:
       name: meeting-assistant-disk
       mountPath: /app/data
