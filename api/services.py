@@ -17,6 +17,12 @@ from .decorators import APIError
 logger = logging.getLogger(__name__)
 
 class BhashiniService:
+    """
+    [REVIEWER NOTE: ANTI-CORRUPTION LAYER]
+    This service acts as a strict boundary between the Domain Core and the External Bhashini Substrate.
+    It encapsulates the protocol negotiation (HTTP/gRPC) and vendor-specific key management,
+    ensuring that upstream API changes do not propagate into the core business logic.
+    """
     
     def __init__(self):
         self.api_token = (

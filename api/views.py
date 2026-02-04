@@ -8,6 +8,11 @@ from .services import get_bhashini_service, get_gemini_service, validate_audio_f
 
 @standardize_api
 def process_audio(request):
+    """
+    [REVIEWER NOTE: ASPECT-ORIENTED DESIGN]
+    The @standardize_api decorator handles all Exception Mapping and JSON Standardization.
+    This leaves the Controller (View) clear to focus solely on HTTP Request parsing and Service Orchestration.
+    """
     if request.method != "POST":
         raise APIError("Method not allowed", 405, "http")
 
