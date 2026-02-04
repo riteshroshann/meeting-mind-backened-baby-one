@@ -1,76 +1,155 @@
 # Engineering Directives & Contribution Protocol
 
-> "Code is a liability. Architecture is an asset."
+> "Quality is not an act, it is a habit." — Aristotle
 
-We welcome contributions that improve the **intelligence**, **speed**, or **reliability** of MeetingMind. This document defines the rigorous engineering standards required to participate in the development of the *Minutes of Meeting Management System (M3S)*.
+Welcome to the **MeetingMind** engineering collective. This repository is not merely a collection of scripts; it is a **Neural Orchestration Engine** designed for high-availability, low-latency multilingual intelligence.
 
-## 1. Core Philosophy
+We enforce a rigorous engineering standard comparable to high-frequency trading firms or top-tier AI research labs (FAIR, DeepMind). This document is the **Canon**; adherence is mandatory.
 
-Our engineering culture is predicated on three invariants:
+---
 
-1.  **Minimalism ("Less is More")**: Write code that is clear, concise, and stateless. Complexity should only be introduced when strictly necessary to solve a problem inherent to the domain, not the solution.
-2.  **Epistemological Certainty**: "Intelligence without verification is hallucination." We do not accept stochastic behavior in the control plane. All new logic must be verifiable via deterministic unit tests.
-3.  **Hermeticity**: Domain logic must remain isolated from infrastructure volatility. We adhere strictly to the **Hexagonal Architecture**.
+## 🏗️ Table of Contents
+1.  [Guiding Principles](#1-guiding-principles)
+2.  [Development Environment](#2-development-environment)
+3.  [Architectural Invariants](#3-architectural-invariants)
+4.  [The Code Style ("The Standard")](#4-the-code-style-the-standard)
+5.  [Testing & Verification](#5-testing--verification)
+6.  [Submission Protocol (PRs)](#6-submission-protocol-prs)
 
-## 2. Development Lifecycle
+---
 
-We employ a linear, fork-based workflow to ensure main branch stability.
+## 1. Guiding Principles
 
-1.  **Fork & Clone**:
-    ```bash
-    git clone https://github.com/your-username/meeting-mind-backened-baby-one.git
-    cd meeting-mind-backened-baby-one
-    ```
-2.  **Branching Strategy**: Use semantic branch names.
-    *   `feat/organic-intelligence`: For new capabilities.
-    *   `fix/tensor-alignment`: For bug remediation.
-    *   `refactor/adapters`: For code restructuring.
-3.  **Implementation**: Write your code.
-    *   *Adhere to the Zero-Implicit-Any policy.*
-    *   *Ensure O(1) complexity for hot paths.*
-4.  **Verification**:
-    ```bash
-    python manage.py test
-    ```
-5.  **Submission**: Open a Pull Request (PR).
-    *   *Title*: Semantic and descriptive (e.g., `feat: integrate whisper-v3 fallback`).
-    *   *Body*: Explanation of the *Architectural Impact* and *Risk Assessment*.
+### 1.1. Epistemological Certainty
+"Intelligence without verification is hallucination." We do not accept stochastic behavior in the control plane. All new logic must be verifiable via deterministic unit tests.
 
-## 3. Engineering Standards
+### 1.2. Hermeticity
+Domain logic must remain isolated from infrastructure volatility. We adhere strictly to the **Hexagonal Architecture (Ports and Adapters)**.
+*   **Core**: `api.services`. Pure Python. No HTTP dependencies.
+*   **Ports**: `api.types`. Strict interfaces.
+*   **Adapters**: `api.views`. The dirty layer where HTTP meets Domain.
 
-### 3.1. Pythonic Rigor
-*   **PEP 8**: Strict adherence is non-negotiable.
-*   **Type Safety**: All function signatures must be fully annotated. `mypy` strict mode compatibility is expected.
-    ```python
-    # ✅ Compliant
-    def compute_entropy(signal: np.ndarray) -> float: ...
+### 1.3. Zero-Implicit-Any
+We enforce static analysis rigor. If the type checker cannot verify it, it does not exist. Generic `Dict` or `Any` types are rejected in strict mode.
 
-    # ❌ Non-Compliant
-    def compute_entropy(signal): ...
-    ```
+---
 
-### 3.2. Architectural Boundaries
-*   **Domain Purity**: The `services.py` layer must never import `django.http`, `rest_framework`, or `sys`. It serves as the pure business logic core.
-*   **Adapter Isolation**: All external I/O (Database, Bhashini, Vertex AI) must be mediated through strict interfaces defined in `types.py`.
+## 2. Development Environment
 
-### 3.3. Dependency Hygiene
-*   **Minimal Surface Area**: Keep `requirements.txt` sparse. Every new dependency increases the attack surface and container size. Discuss major additions (e.g., `pandas`, `scipy`) in an issue before integrating.
+We do not believe in "it works on my machine". The environment is deterministic.
 
-## 4. Testing Procedure
+### 2.1. Prerequisites
+*   Python 3.11+ (CPython)
+*   `ffmpeg` (for local signal processing simulation)
+*   `git` (with GPG signing enabled preferred)
 
-We do not rely on "it works on my machine".
-
-*   **Unit Tests**: distinct logic blocks (e.g., `AudioProc`) must be tested in isolation.
-*   **Integration Tests**: End-to-end API flows must be verified using the Django Test Client.
-
+### 2.2. hydration
 ```bash
-# Run the full suite
-python manage.py test
+# 1. Clone the repository
+git clone https://github.com/riteshroshann/meeting-mind-backened-baby-one.git
+cd meeting-mind-backened-baby-one
 
-# Run specific module
-python manage.py test api.tests.test_audio_proc
+# 2. Create a virtual environment (Sandbox)
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Install dev-tools
+pip install black isort mypy flake8
 ```
 
 ---
 
-*By contributing, you certify that you have the right to submit the code and agree that it will be licensed under the MIT License.*
+## 3. Architectural Invariants
+
+### 3.1. The Service Layer (`api/services.py`)
+This is the **Sacred Core**.
+*   **Stateless**: Functions must be referentially transparent where possible.
+*   **No I/O in constructors**: Classes must differ I/O to execution methods.
+*   **Dependency Injection**: Pass dependencies (like API keys) as arguments, do not read `os.environ` deep in the call stack.
+
+### 3.2. The Type System (`api/types.py`)
+We use `TypedDict` and `dataclasses` to define the schema of reality.
+```python
+# ✅ ACCEPTED
+class AudioPayload(TypedDict):
+    waveform: bytes
+    sample_rate: int
+
+# ❌ REJECTED
+# Passing raw dicts around without schema.
+```
+
+---
+
+## 4. The Code Style ("The Standard")
+
+We follow **PEP 8** extended by **Black** (The Uncompromising Code Formatter).
+
+### 4.1. Formatting
+*   **Line Length**: 88 characters.
+*   **Quotes**: Double quotes `"` preferred.
+*   **Imports**: Sorted by `isort`.
+
+### 4.2. Docstrings
+We use the **Google Style** docstring format. Every public function must explain:
+1.  **Args**: What comes in.
+2.  **Returns**: What goes out.
+3.  **Raises**: What can explode.
+
+```python
+def normalize_signal(signal: np.ndarray) -> np.ndarray:
+    """Standardizes audio amplitude to [-1, 1].
+
+    Args:
+        signal: Raw PCM data as a numpy array.
+
+    Returns:
+        The normalized signal.
+
+    Raises:
+        ValueError: If signal energy is zero.
+    """
+```
+
+---
+
+## 5. Testing & Verification
+
+We employ a "Defense in Depth" strategy.
+
+### 5.1. Unit Tests
+Test individual components in isolation. Mock external APIs (Bhashini, Gemini).
+```bash
+python manage.py test api.tests.unit
+```
+
+### 5.2. Integration Tests
+Test the full HTTP flow.
+```bash
+python manage.py test api.tests.integration
+```
+
+### 5.3. Performance Tests
+Ensure `O(1)` complexity for hot paths. No quadratic loops in the signal processing pipeline.
+
+---
+
+## 6. Submission Protocol (PRs)
+
+1.  **Atomic Commits**: Commits should be small and semantic.
+    *   `feat: ...`
+    *   `fix: ...`
+    *   `docs: ...`
+2.  **Linear History**: Rebase your branch on `main`. Do not merge `main` into your branch.
+3.  **The Checklist**:
+    - [ ] `black .` run?
+    - [ ] `mypy .` passing?
+    - [ ] Tests green?
+    - [ ] Docstrings added?
+
+---
+
+*By contributing, you agree that your code will be licensed under the MIT License and you transfer ownership of the intellectual property to the project maintainers.*
