@@ -86,41 +86,37 @@ Translates internal domain objects into vendor-specific GRPC payloads.
 The diagram below illustrates the comprehensive state transition from raw acoustic pressure to structured semantic JSON, including error handling and state replication buffers.
 
 ```mermaid
-graph TD
-    %% High-Fidelity "Awesome" Styling
-    classDef core fill:#0f172a,stroke:#3b82f6,stroke-width:3px,color:#e2e8f0,rx:5,ry:5
-    classDef ext fill:#1a1a1a,stroke:#d97706,stroke-width:2px,color:#fbbf24,stroke-dasharray: 5 5,rx:5,ry:5
-    classDef io fill:#1e293b,stroke:#a855f7,stroke-width:3px,color:#f8fafc,rx:5,ry:5
+graph LR
+    %% Professional "Hexagonal" Styling
+    classDef core fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#e2e8f0,rx:4,ry:4
+    classDef ext fill:#171717,stroke:#d97706,stroke-width:2px,color:#fbbf24,stroke-dasharray: 5 5,rx:4,ry:4
+    classDef io fill:#1e293b,stroke:#a855f7,stroke-width:2px,color:#f8fafc,rx:4,ry:4
 
-    Client[Client Interface] -->|Multipart Stream| Ingress
+    Client((Client)):::io -->|Multipart| Ingress[Ingress Gate]:::io
     
-    subgraph "Core Domain Hexagon"
-        direction TB
-        Ingress[Signal Ingress]:::io -->|Buffer| TempFile[MemMapped Spool]:::core
-        TempFile -->|Raw Bytes| Validator[Magic Byte Check]:::core
+    subgraph "Core Domain (Hexagon)"
+        direction LR
+        Ingress -->|Buffer| Norm[Signal Normalization]:::core
+        Norm -->|Tensor| Adapter[Neural Adapter]:::core
         
-        Validator -->|Valid PCM| Resampler[Polyphase FIR Filter]:::core
-        Resampler -->|16kHz Signal| Norm[Normalization Layer]:::core
-        
-        Norm -->|Float32 Tensor| Adapter[Neural Adapter]:::core
-        
-        subgraph "Reasoning Pipeline"
+        subgraph "Reasoning Kernel"
             direction TB
-            Adapter -->|Token Stream| CoT[Chain-of-Thought]:::core
-            CoT -->|Action Items| Extractor[Entity Extractor]:::core
-            Extractor -->|JSON Schema| Engine[Inference Engine]:::core
+            Adapter -->|Stream| CoT[Chain-of-Thought]:::core
+            CoT -->|Action Items| Engine[Inference Engine]:::core
         end
 
-        Engine -->|Structured Object| Serializer[JSON Serializer]:::core
-        Serializer -->|HTTP 200| Egress[API Egress]:::io
+        Engine -->|JSON| Egress[API Egress]:::io
     end
 
     subgraph "External Compute Substrate"
-        Adapter <== gRPC ==> Bhashini[Bhashini Neural Cloud]:::ext
-        Engine <== HTTPS ==> Vertex[Google Vertex AI]:::ext
+        direction TB
+        Bhashini[Bhashini Neural Cloud]:::ext
+        Vertex[Google Vertex AI]:::ext
     end
 
-    Egress -->|JSON Response| Client
+    Adapter <== gRPC ==> Bhashini
+    Engine <== HTTPS ==> Vertex
+    Egress -->|HTTP 200| Client
 ```
     
     subgraph "Core Domain (Hexagon)"
