@@ -2,6 +2,12 @@
 
 > "The gap between acoustic signal and semantic understanding is high-dimensional. We collapse it."
 
+<div align="center">
+  <video src="assets/demo.mp4" width="100%" controls></video>
+  <br>
+  <em><a href="assets/demo.mp4">View High-Fidelity Demo (MP4)</a></em>
+</div>
+
 ---
 
 ### Abstract
