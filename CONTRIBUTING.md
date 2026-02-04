@@ -94,61 +94,43 @@ We follow **PEP 8** extended by **Black** (The Uncompromising Code Formatter).
 *   **Imports**: Sorted by `isort`.
 
 ### 4.2. Docstrings
-We use the **Google Style** docstring format. Every public function must explain:
-1.  **Args**: What comes in.
-2.  **Returns**: What goes out.
-3.  **Raises**: What can explode.
-
-```python
-def normalize_signal(signal: np.ndarray) -> np.ndarray:
-    """Standardizes audio amplitude to [-1, 1].
-
-    Args:
-        signal: Raw PCM data as a numpy array.
-
-    Returns:
-        The normalized signal.
-
-    Raises:
-        ValueError: If signal energy is zero.
-    """
-```
+We use the **Google Style** docstring. `pydocstyle` via `flake8` will enforce this.
 
 ---
 
 ## 5. Testing & Verification
 
-We employ a "Defense in Depth" strategy.
+We employ a "Defense in Depth" strategy, enforced by **GitHub Actions**.
 
-### 5.1. Unit Tests
-Test individual components in isolation. Mock external APIs (Bhashini, Gemini).
+### 5.1. The Test Suite
+We have migrated to a professional `tests/` directory structure.
+*   **Unit Tests**: `tests/test_services.py` (Pure domain logic)
+*   **Integration Tests**: `tests/test_views.py` (API Adapters)
+
 ```bash
-python manage.py test api.tests.unit
+# Run the full suite (invokes pytest via django)
+python manage.py test
+
+# OR directly via pytest (configured in pyproject.toml)
+pytest
 ```
 
-### 5.2. Integration Tests
-Test the full HTTP flow.
-```bash
-python manage.py test api.tests.integration
-```
-
-### 5.3. Performance Tests
-Ensure `O(1)` complexity for hot paths. No quadratic loops in the signal processing pipeline.
+### 5.2. CI/CD Gating
+Every Pull Request triggers the `quality-gate` workflow defined in `.github/workflows/ci.yml`.
+*   **Must Pass**: Black, Isort, Mypy, Flake8, and minimal unit tests.
+*   **Coverage**: We aim for >80% coverage on new features.
 
 ---
 
 ## 6. Submission Protocol (PRs)
 
-1.  **Atomic Commits**: Commits should be small and semantic.
-    *   `feat: ...`
-    *   `fix: ...`
-    *   `docs: ...`
-2.  **Linear History**: Rebase your branch on `main`. Do not merge `main` into your branch.
+1.  **Atomic Commits**: Commits should be small and semantic (`feat: ...`, `fix: ...`).
+2.  **Documentation**: Place non-code artifacts (Postman collections, diagrams) in `docs/`.
 3.  **The Checklist**:
-    - [ ] `black .` run?
+    - [ ] `black .` & `isort .` run?
     - [ ] `mypy .` passing?
-    - [ ] Tests green?
-    - [ ] Docstrings added?
+    - [ ] Tests green locally?
+    - [ ] CI pipeline passing on GitHub?
 
 ---
 
