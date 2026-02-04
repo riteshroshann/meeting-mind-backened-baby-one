@@ -8,11 +8,7 @@
   <img src="https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square" alt="License">
 </div>
 
-<br>
 
-<div align="center">
-  <video src="assets/demo.mp4" width="100%" controls></video>
-</div>
 
 ---
 
