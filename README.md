@@ -18,7 +18,9 @@
 
 ## 1. Project Profile: The Bhashini-Powered M3S
 
-> **Status**: National Level Startup Accelerator Initiative — **Grand Finale Finalist** (Stage 3 Qualified).
+> **Project Status**: National Level Startup Accelerator Initiative — **Grand Finale Finalist** (Stage 3 Qualified).
+>
+> *Note: This repository represents the architectural snapshot showcased for Stage 3. For the Grand Finale, major semantic enhancements including Hugging Face Transformers for Speaker Diarization and Contextual Intelligence have been integrated. These proprietary modules are currently in a private staging environment.*
 
 **MeetingMind**, also designated as the **Minutes of Meeting Management System (M3S)**, is a flagship innovation engineered for the "Bhashini Grand Challenge". It represents a paradigm shift in multilingual collaboration, designed to dismantle linguistic barriers in real-time.
 
@@ -77,24 +79,42 @@ The diagram below illustrates the comprehensive state transition from raw acoust
 
 ```mermaid
 graph TD
-    classDef core fill:#2d2d2d,stroke:#5a5a5a,color:#fff
-    classDef ext fill:#1a1a1a,stroke:#333,color:#888,stroke-dasharray: 5 5
+    %% Masterpiece Styling: Cyberpunk & Gold
+    classDef core fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#e2e8f0,rx:5,ry:5
+    classDef ext fill:#171717,stroke:#d97706,stroke-width:2px,color:#fbbf24,stroke-dasharray: 5 5,rx:5,ry:5
+    classDef io fill:#1e293b,stroke:#a855f7,stroke-width:2px,color:#f8fafc,rx:5,ry:5
 
-    Client[Client Interface] -->|Multipart Stream| Ingress
+    Client((User / Client)):::io == HTTPS ==> Ingress[Django Ingress Port]:::io
     
-    subgraph "Core Domain"
-        Ingress[Signal Ingress]:::core -->|16kHz PCM| Norm[Normalization Layer]:::core
-        Norm -->|Float32 Vector| Adapter[Neural Adapter]:::core
-        Adapter -->|Text Stream| Engine[Inference Engine]:::core
-        Engine -->|Structured JSON| Egress[API Egress]:::core
+    subgraph "The Core Domain (Hexagon)"
+        direction TB
+        
+        subgraph "Signal Acquisition"
+            Ingress -->|Multipart Stream| Spool[MemMapped Spool]:::core
+            Spool -->|Read| Magic[Magic Byte Validation]:::core
+        end
+
+        subgraph "Digital Signal Processing (DSP)"
+            Magic -->|Raw PCM| Librosa[Librosa Resampler]:::core
+            Librosa -- 16kHz --> Numpy[Numpy Normalization]:::core
+            Numpy -- Vector --> Adapter[Neural Adapter]:::core
+        end
+        
+        subgraph "Cognitive Pipeline"
+            Adapter -- gRPC --> Bhashini[Bhashini ASR Relay]:::core
+            Bhashini -- Text --> CoT[Chain-of-Thought Prompt]:::core
+            CoT -- Context --> Gemini[Gemini Reasoning]:::core
+            Gemini -- JSON --> Parser[Strict Type Parser]:::core
+        end
     end
 
-    subgraph "External Compute"
-        Adapter -->|gRPC| Bhashini[Bhashini Neural Cloud]:::ext
-        Engine -->|HTTPS| Vertex[Google Vertex AI]:::ext
+    subgraph "External Compute Substrate"
+        Bhashini <==>|Neural Stream| CloudA[Bhashini Cloud]:::ext
+        Gemini <==>|Inference| CloudB[Google Vertex AI]:::ext
     end
 
-    Egress -->|JSON| Client
+    Parser -->|Structured Schema| Egress[API Egress]:::io
+    Egress == HTTP 200 ==> Client
 ```
 
 ## 4. The Technical Ensemble: Comprehensive Dependency Analysis
