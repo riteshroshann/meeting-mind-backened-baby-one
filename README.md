@@ -60,41 +60,63 @@ Audio input **x ∈ Rᵀ** is treated as a high-dimensional tensor. The pipeline
 
 ### 2.2. The Neural Plane
 We orchestrate a tiered model ensemble:
-*   **Acoustic Model (AM)**: **Bhashini (Dhruva)**. Selected for its superior performance on low-resource Indic languages compared to generic commercial baselines.
-*   **Reasoning Model (LLM)**: **Gemini Pro**. Acts as the deterministic "Decision Head", parsing raw transcripts into strict JSON schemas for intent classification and entity extraction.
-
 ## 3. System Architecture: The Hexagonal Lattice
 
 The system is engineered as a **Hexagonal Architecture (Ports and Adapters)**, enforcing a strict separation of concerns between the **Domain Core** (Business Logic) and the **Infrastructure Layer** (I/O). This topological isolation guarantees that the signal processing logic remains invariant regardless of changes in the neural provider substrate.
 
 ### 3.1. Architectural Components
-*   **Signal Ingress (The Port)**: A non-blocking HTTP listener that accepts `multipart/form-data` streams. It enforces strict MIME-type validation (`audio/wav`) and buffers the payload into a temporary memory-mapped file `SpooledTemporaryFile` to prevent RAM exhaustion during high-concurrency bursts.
-*   **Normalization Layer (The Core)**: A pure-function pipeline where the raw PCM signal $x(t)$ is re-quantized to 16kHz mono. This layer applies amplitude scaling $\hat{x} = \frac{x - \mu}{\sigma}$ to maximize the dynamic range before neural ingestion.
-*   **Neural Adapter (The Adapter)**: An anti-corruption layer that translates internal domain objects into vendor-specific GRPC payloads for Bhashini/Gemini. It handles connection pooling, retry logic with exponential backoff, and error serialization.
 
-### 3.2. Data Flow Differentiability
-The diagram below illustrates the comprehensive state transition from raw acoustic pressure to structured semantic JSON:
+#### 3.1.1. Signal Ingress (The Port)
+A non-blocking HTTP listener that accepts `multipart/form-data` streams.
+*   **Validation**: Enforces strict MIME-type validation (`audio/wav`) and magic-byte verification.
+*   **Buffering**: Buffers the payload into a temporary memory-mapped file `SpooledTemporaryFile` to prevent RAM exhaustion during high-concurrency bursts (>500MB).
+
+#### 3.1.2. Normalization Layer (The Core)
+A pure-function pipeline where the raw PCM signal $x(t)$ is re-quantized.
+*   **Resampling**: Downscales inputs to `16kHz` using a Polyphase FIR filter.
+*   **Scaling**: Applies amplitude scaling $\hat{x} = \frac{x - \mu}{\sigma}$ to maximize the dynamic range for the Conformer AM.
+
+#### 3.1.3. Neural Adapter (The Anti-Corruption Layer)
+Translates internal domain objects into vendor-specific GRPC payloads.
+*   **Resilience**: Implements a "Circuit Breaker" pattern with exponential backoff for Bhashini/Gemini connections.
+*   **Serialization**: Marshals native Python objects into strict Protobuf messages, preventing runtime type errors.
+
+### 3.2. Data Flow Differentiability (Full Topology)
+
+The diagram below illustrates the comprehensive state transition from raw acoustic pressure to structured semantic JSON, including error handling and state replication buffers.
 
 ```mermaid
 graph TD
-    classDef core fill:#2d2d2d,stroke:#5a5a5a,color:#fff
-    classDef ext fill:#1a1a1a,stroke:#333,color:#888,stroke-dasharray: 5 5
+    classDef core fill:#2d2d2d,stroke:#5a5a5a,color:#fff,stroke-width:2px
+    classDef ext fill:#141414,stroke:#333,color:#888,stroke-dasharray: 5 5
+    classDef io fill:#004488,stroke:#0066cc,color:#fff
 
     Client[Client Interface] -->|Multipart Stream| Ingress
     
-    subgraph "Core Domain"
-        Ingress[Signal Ingress]:::core -->|16kHz PCM| Norm[Normalization Layer]:::core
-        Norm -->|Float32 Vector| Adapter[Neural Adapter]:::core
-        Adapter -->|Text Stream| Engine[Inference Engine]:::core
-        Engine -->|Structured JSON| Egress[API Egress]:::core
+    subgraph "Core Domain (Hexagon)"
+        Ingress[Signal Ingress]:::io -->|Buffer| TempFile[MemMapped Spool]:::core
+        TempFile -->|Raw Bytes| Validator[Magic Byte Check]:::core
+        Validator -->|Valid PCM| Resampler[Polyphase FIR Filter]:::core
+        Resampler -->|16kHz Signal| Norm[Normalization Layer]:::core
+        
+        Norm -->|Float32 Tensor| Adapter[Neural Adapter]:::core
+        
+        subgraph "Reasoning Pipeline"
+            Adapter -->|Token Stream| CoT[Chain-of-Thought]:::core
+            CoT -->|Action Items| Extractor[Entity Extractor]:::core
+            Extractor -->|JSON Schema| Engine[Inference Engine]:::core
+        end
+
+        Engine -->|Structured Object| Serializer[JSON Serializer]:::core
+        Serializer -->|HTTP 200| Egress[API Egress]:::io
     end
 
-    subgraph "External Compute"
-        Adapter -->|gRPC| Bhashini[Bhashini Neural Cloud]:::ext
-        Engine -->|HTTPS| Vertex[Google Vertex AI]:::ext
+    subgraph "External Compute Substrate"
+        Adapter <== gRPC ==> Bhashini[Bhashini Neural Cloud]:::ext
+        Engine <== HTTPS ==> Vertex[Google Vertex AI]:::ext
     end
 
-    Egress -->|JSON| Client
+    Egress -->|JSON Response| Client
 ```
 
 ## 4. The Technical Ensemble: Comprehensive Dependency Analysis
