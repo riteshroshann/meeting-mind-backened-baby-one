@@ -62,18 +62,27 @@ graph TD
     Egress -->|JSON| Client
 ```
 
-## 4. Technical Stack
+## 4. Infrastructure & Dependency Analysis
 
-The dependency graph is rigorously pruned to ensure minimal container footprint.
+To minimize the *container footprint* while maximizing *inference throughput*, we adhere to a "Radical Simplification" strategy. Every dependency satisfies a critical path requirement.
 
-| Component | Artifact | Role | Technical Rationale |
-| :--- | :--- | :--- | :--- |
-| **Runtime** | `python:3.11` | Environment | Utilizing adaptive specializing opcodes for ~25% performance gain. |
-| **State** | `Django 4.2` | Orchestrator | Synchronous, strictly-typed application backbone. |
-| **Compute** | `numpy` | Linear Algebra | Contiguous memory layouts for vectorized signal operations. |
-| **DSP** | `librosa` | Signal Proc | Precision STFT and MFCC extraction. |
-| **Acoustic** | `Bhashini` | Neural Cloud | SOTA Conformer-based ASR for Indic phonemes. |
-| **Inference** | `google-genai` | Model Bridge | gRPC transport for safety-bounded token streaming. |
+### 4.1. The Acoustic Substrate: Bhashini (Dhruva)
+We bypass generic ASR providers (e.g., Whisper, Google STT) in favor of **Bhashini**, the National Language Translation Mission's neural cloud.
+*   **Rationale**: Bhashini's *Dhruva* model architecture is fine-tuned on ~11,000 hours of diverse Indian English and Indic dialect data, offering superior phoneme recognition for Indian accents compared to western-centric models.
+*   **Integration**: We utilize `ULCA` (Unified Language Contribution API) via strict gRPC contracts to minimize handshake latency.
+
+### 4.2. The Reasoning Core: Google Gemini Pro
+Gemini Pro serves not just as a text generator, but as a **Deterministic Parser**.
+*   **Chain-of-Thought (CoT)**: We inject a system prompt that enforces intermediate reasoning steps before JSON emission.
+*   **Zero-Shot Taxonomy**: The model dynamically categorizes "Action Items" based on context window analysis without fine-tuning, leveraging its massive pre-training on code and logic datasets.
+
+### 4.3. The Orchestration Layer: Django & Gunicorn
+*   **Django 4.2 (LTS)**: Selected for its synchronous, thread-safe ORM. Unlike `FastAPI` (which optimizes for async IO), Django provides a stable "batteries-included" state machine for handling complex multi-part uploads and validation chains before adhering to async handoffs.
+*   **Gunicorn**: Configured with `sync` workers. Since audio normalization is CPU-bound, we isolate these operations in dedicated worker processes to prevent GIL contention from stalling the inference loop.
+
+### 4.4. Signal Processing: Librosa & Numpy
+*   **Librosa**: We utilize standard Short-Time Fourier Transform (STFT) implementations for spectral analysis.
+*   **Numpy**: Provides the contiguous memory buffers (C-struct alignment) required for `O(1)` tensor mutations during the normalization phase (`(x - μ) / σ`).
 
 ## 5. Usage
 
