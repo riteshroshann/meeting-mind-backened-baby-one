@@ -72,6 +72,7 @@ The dependency graph is rigorously pruned to ensure minimal container footprint.
 | **State** | `Django 4.2` | Orchestrator | Synchronous, strictly-typed application backbone. |
 | **Compute** | `numpy` | Linear Algebra | Contiguous memory layouts for vectorized signal operations. |
 | **DSP** | `librosa` | Signal Proc | Precision STFT and MFCC extraction. |
+| **Acoustic** | `Bhashini` | Neural Cloud | SOTA Conformer-based ASR for Indic phonemes. |
 | **Inference** | `google-genai` | Model Bridge | gRPC transport for safety-bounded token streaming. |
 
 ## 5. Usage
