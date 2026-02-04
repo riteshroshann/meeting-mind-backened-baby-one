@@ -85,27 +85,29 @@ graph TD
     Egress -->|JSON| Client
 ```
 
-## 4. Infrastructure & Dependency Analysis
+## 4. The Technical Ensemble: Comprehensive Dependency Analysis
 
-To minimize the *container footprint* while maximizing *inference throughput*, we adhere to a "Radical Simplification" strategy. Every dependency satisfies a critical path requirement.
+The M3S architecture relies on a **curated symphony of 12 production-grade libraries**, each selected for a specific role in the high-dimensional processing pipeline. This is not a monolith; it is a composite system.
 
-### 4.1. The Acoustic Substrate: Bhashini (Dhruva)
-We bypass generic ASR providers (e.g., Whisper, Google STT) in favor of **Bhashini**, the National Language Translation Mission's neural cloud.
-*   **Rationale**: Bhashini's *Dhruva* model architecture is fine-tuned on ~11,000 hours of diverse Indian English and Indic dialect data, offering superior phoneme recognition for Indian accents compared to western-centric models.
-*   **Integration**: We utilize `ULCA` (Unified Language Contribution API) via strict gRPC contracts to minimize handshake latency.
+### 4.1. Core Orchestration & Security
+*   **Django 4.2 (LTS)**: The immutable backbone. Chosen for its "batteries-included" security model (CSRF/XSS protection) and robust ORM, providing the synchronous state machine required for reliable transaction management.
+*   **Django CORS Headers**: Middleware configured to enforce strict Cross-Origin Resource Sharing policies, permitting only authenticated ingress from the frontend substrate.
+*   **Python-Dotenv**: Enforces the **12-Factor App** methodology by strictly separating configuration (Secrets/Keys) from code, loading ephemeral environment variables at runtime.
 
-### 4.2. The Reasoning Core: Google Gemini Pro
-Gemini Pro serves not just as a text generator, but as a **Deterministic Parser**.
-*   **Chain-of-Thought (CoT)**: We inject a system prompt that enforces intermediate reasoning steps before JSON emission.
-*   **Zero-Shot Taxonomy**: The model dynamically categorizes "Action Items" based on context window analysis without fine-tuning, leveraging its massive pre-training on code and logic datasets.
+### 4.2. Advanced Signal Processing (The DSP Layer)
+*   **Librosa**: The industry standard for music and audio analysis. We utilize its Short-Time Fourier Transform (STFT) and Mel-frequency cepstral coefficients (MFCCs) for spectral feature extraction.
+*   **Numpy**: The mathematical engine. Provides contiguous C-struct memory layouts (`ndarray`) for vectorized operations, ensuring audio normalization occurs in `O(1)` time / `O(N)` space.
+*   **Soundfile**: A robust backend for reading and writing high-fidelity audio files, handling raw PCM ingress with memory-mapped file access.
+*   **Pydub**: Utilized for high-level audio manipulation, including format transcoding (mp3 $\to$ wav) and decibel-based silence truncation.
 
-### 4.3. The Orchestration Layer: Django & Gunicorn
-*   **Django 4.2 (LTS)**: Selected for its synchronous, thread-safe ORM. Unlike `FastAPI` (which optimizes for async IO), Django provides a stable "batteries-included" state machine for handling complex multi-part uploads and validation chains before adhering to async handoffs.
-*   **Gunicorn**: Configured with `sync` workers. Since audio normalization is CPU-bound, we isolate these operations in dedicated worker processes to prevent GIL contention from stalling the inference loop.
+### 4.3. The Neural Substrate
+*   **Google Generative AI (Gemini Pro)**: The cognitive processor. We leverage the Python SDK for streaming inference, integrating Chain-of-Thought (CoT) system prompts to force deterministic JSON outputs.
+*   **Requests**: The synchronous transport layer. Handles the high-reliability gRPC/REST handshakes with the **Bhashini** Neural Cloud for ASR services.
 
-### 4.4. Signal Processing: Librosa & Numpy
-*   **Librosa**: We utilize standard Short-Time Fourier Transform (STFT) implementations for spectral analysis.
-*   **Numpy**: Provides the contiguous memory buffers (C-struct alignment) required for `O(1)` tensor mutations during the normalization phase (`(x - μ) / σ`).
+### 4.4. Production Engineering
+*   **Gunicorn**: A Green Unicorn WSGI HTTP Server. Configured with synchronous workers to handle CPU-bound signal processing tasks without blocking the I/O loop.
+*   **Whitenoise**: Radically simplified static file serving. Allows the Python application to serve its own assets with efficient caching headers, removing the need for a separate Nginx reverse proxy for static content.
+*   **Joblib**: Provides lightweight pipelining and object caching, optimizing the serialization of heavy acoustic models and intermediate tensor states.
 
 ## 5. Usage
 
