@@ -136,7 +136,7 @@ python manage.py runserver
     <img src="https://img.youtube.com/vi/NT591v-rOj0/maxresdefault.jpg" alt="Watch the Video" width="100%">
   </a>
   <br>
-  <em><a href="https://youtu.be/NT591v-rOj0">Watch the Full Demonstration on YouTube</a></em>
+  <em><a href="https://youtu.be/NT591v-rOj0">Watch the Full Demo on YouTube</a></em>
 </div>
 
 <br>
