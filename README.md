@@ -163,8 +163,6 @@ python manage.py runserver
 </div>
 
 <br>
-<hr>
-<br>
 
 <div align="center">
   <em>Architected by <a href="https://github.com/riteshroshann">Ritesh Roshan</a>.</em>
