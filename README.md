@@ -1,190 +1,134 @@
-# MeetingMind Backend
+# MeetingMind
 
-Django REST API backend for the AI-powered meeting assistant.
+> "The gap between acoustic signal and semantic understanding is high-dimensional. We collapse it."
 
-## Quick Start
+---
 
-### Development
-\`\`\`bash
+### Abstract
+
+MeetingMind is not merely a transcription tool; it is a **neural orchestration engine** engineered to bridge the latency between human speech and structured digital intelligence. By fusing precise signal processing with state-of-the-art Automatic Speech Recognition (ASR) and Large Language Model (LLM) reasoning, we engineer a pipeline that transmutes raw audio waveforms into deterministic, queryable insights.
+
+This system is built for the **multilingual reality** of the modern enterprise, leveraging the **Bhashini** compute stack to achieve near-native fidelity across 12+ Indic languages, coupled with **Gemini Pro's** reasoning capabilities for context-aware synthesis.
+
+---
+
+### The Architecture
+
+The system adheres to a strict **Hexagonal Architecture (Ports and Adapters)**, isolating the core domain logic from the volatility of external compute substrates.
+
+```mermaid
+graph TD
+    subgraph "Compute Substrate"
+        Bhashini[Bhashini Neural Cloud]
+        Vertex[Google Vertex AI]
+    end
+
+    subgraph "Core Domain"
+        Ingress[Signal Ingress] -->|16kHz PCM| Norm[Normalization Layer]
+        Norm -->|Vector| Adapter[Neural Adapter]
+        Adapter <-->|gRPC| Bhashini
+        Adapter -->|Text Stream| Reasoner[Inference Engine]
+        Reasoner <-->|HTTPS| Vertex
+        Reasoner -->|Structured JSON| Egress[API Egress]
+    end
+
+    Client -->|Multipart| Ingress
+    Egress -->|JSON| Client
+```
+
+#### 1. The Signal Plane
+Audio is not treated as a file, but as a **high-dimensional signal**. The `AudioProc` layer enforces a rigorous normalization protocol:
+- **Resampling**: All inputs are downsampled to `16kHz` to match the receptive field of the Conformer ASR models.
+- **Normalization**: Amplitudes are standardized to maximize the signal-to-noise ratio before neural inference.
+- **Heuristics**: A dual-fallback mechanism (`librosa` / `soundfile`) ensures `O(1)` reliability even in constrained, non-GPU runtime environments.
+
+#### 2. The Neural Plane
+We do not reinvent the wheel; we orchestrate the best-in-class models.
+- **Acoustic Model**: Bhashini (Dhruva) provides the foundational ASR/NMT layer, optimized for the phoneme diversity of the Indian subcontinent.
+- **Reasoning Model**: Gemini Pro acts as the "Decision Head", taking raw transcripts and applying chain-of-thought prompting to extract action items, intent, and sentiment with **zero-shot** generalization.
+
+---
+
+### The Stack Ensemble
+
+> "We stand on the shoulders of giants, orchestrating a symphony of deterministic state and probabilistic reasoning."
+
+Our dependency graph is minimal yet complete, optimized for the intersection of signal processing and web standards.
+
+| Component | Artifact | Version | Role | Rationale |
+| :--- | :--- | :--- | :--- | :--- |
+| **Runtime** | `python:3.11-slim-bullseye` | `3.11` | Execution Environment | Leveraging the specialized opcodes for adaptive specialization in CPython 3.11, reducing interpreter overhead by ~10-60%. |
+| **Orchestrator** | `Django` | `4.2.7 LTS` | Web Framework | The "batteries-included" monolith providing robust ORM, middleware chains, and security headers out of the box. Essential for strict state management. |
+| **WSGI Interface** | `gunicorn` | `21.2.0` | Application Server | Pre-fork worker model handling concurrent request/response cycles. Configured for 'sync' workers to handle high-cpu signal processing tasks without thread contention. |
+| **Signal Core** | `librosa` | `0.10.1` | Audio Analysis | The gold standard. Utilizing STFT (Short-Time Fourier Transform) and Mel-frequency cepstral coefficients (MFCCs) for precise spectral analysis and resampling. |
+| **Audio I/O** | `soundfile` + `libsndfile` | `0.12.1` | Codec Binding | C-level bindings for reading/writing audio files. Bypasses Python's slow file I/O for raw PCM data handling. |
+| **Tensor Ops** | `numpy` | `1.24.3` | Numerical Compute | Providing contiguous memory arrays for O(1) audio buffer manipulation before serialization. |
+| **Inference SDK** | `google-generativeai` | `0.3.2` | Model Bridge | The GRPC interface to the Gemini reasoning substrate, handling managing tokens, temperature, and safety settings. |
+| **Static Asset** | `whitenoise` | `6.6.0` | CDN Middleware | Radically simplified static file serving directly from the WSGI application, eliminating the need for Nginx in containerized environments. |
+| **Environment** | `python-dotenv` | `1.0.0` | Configuration | 12-Factor App compliance. Strict separation of code and config via environment variable injection. |
+| **Utilities** | `joblib` | `1.3.2` | Pipelining | Optimized disk-caching and parallel execution helpers, ensuring expensive transforms are memoized where applicable. |
+
+---
+
+
+### Protocol Definition
+
+The API is strictly typed and deterministic.
+
+**Endpoint**: `POST /api/process-audio/`
+
+**Payload**:
+- `audio`: The raw waveform (WAV/MP3/M4A). High-fidelity preferred.
+- `sourceLanguage`: ISO-639-1 identifier (e.g., `hi`, `bn`).
+- `targetLanguage`: ISO-639-1 identifier (e.g., `en`).
+- `preMeetingNotes`: Auxiliary vectors to bias the attention mechanism of the LLM.
+
+**Output**:
+```json
+{
+  "success": true,
+  "meta": {
+    "latency_ms": 420.5,
+    "method": "POST"
+  },
+  "data": {
+    "transcript": "...",
+    "translation": "...",
+    "summary": "...",
+    "actionItems": [ ... ]
+  }
+}
+```
+
+---
+
+### Deployment & Replicability
+
+We prioritize **reproducibility** over configuration.
+
+**1. Clone the Source**
+```bash
+git clone https://github.com/riteshroshann/meeting-mind-backened-baby-one.git
+cd meeting-mind-backened-baby-one
+```
+
+**2. Hydrate Dependencies**
+```bash
 pip install -r requirements.txt
-python manage.py migrate
+```
+
+**3. Inject Secrets**
+Create a `.env` file. You need the **Bhashini ULCA** keys and **Google Vertex** credentials.
+```env
+BHASHINI_USER_ID=...
+ULCA_API_KEY=...
+```
+
+
+**4. Ignite**
+```bash
 python manage.py runserver
-\`\`\`
+```
 
-### Environment Setup
-\`\`\`bash
-cp .env.example .env
-# Edit .env with your API keys
-\`\`\`
-
-### Environment Variables
-\`\`\`
-BHASHINI_USER_ID=your_bhashini_user_id
-ULCA_API_KEY=your_ulca_api_key
-BHASHINI_AUTH_TOKEN=your_bhashini_auth_token
-OPENAI_API_KEY=your_openai_api_key
-DJANGO_SECRET_KEY=your_secret_key_here
-DEBUG=True  # For development
-\`\`\`
-
-## Project Structure
-
-\`\`\`
-backend/
-├── meeting_assistant/     # Django project
-│   ├── __init__.py
-│   ├── settings.py       # Django settings
-│   ├── urls.py          # URL routing
-│   ├── wsgi.py          # WSGI application
-│   └── asgi.py          # ASGI application
-├── api/                  # Main API app
-│   ├── __init__.py
-│   ├── apps.py          # App configuration
-│   ├── urls.py          # API URL patterns
-│   ├── views.py         # API views
-│   ├── services.py      # Business logic
-│   └── models.py        # Database models
-├── requirements.txt      # Python dependencies
-├── manage.py            # Django management
-├── Dockerfile           # Container configuration
-└── vercel.json          # Vercel deployment config
-\`\`\`
-
-## Tech Stack
-
-- Framework: Django 4.2 + Django REST Framework
-- Language: Python 3.11+
-- AI Services: OpenAI GPT-4, Bhashini API
-- Audio Processing: Built-in multipart handling
-- Deployment: Render, Railway, or Vercel
-
-## API Endpoints
-
-### Health Check
-\`\`\`
-GET /api/health/
-Response: {"status": "healthy", "timestamp": "..."}
-\`\`\`
-
-### Connection Test
-\`\`\`
-GET /api/test-connection/
-Response: {"bhashini": "connected", "openai": "connected"}
-\`\`\`
-
-### Audio Processing
-\`\`\`
-POST /api/process-audio/
-Content-Type: multipart/form-data
-
-Fields:
-- audio: Audio file (MP3, WAV, M4A, etc.)
-- primaryLanguage: Source language code (e.g., "hi-IN")
-- targetLanguage: Target language code (e.g., "en-US")
-- preMeetingNotes: Optional context notes
-
-Response:
-{
-  "transcript": "Transcribed text...",
-  "summary": "AI-generated summary...",
-  "translatedText": "Translated text...",
-  "actionItems": [
-    {
-      "item": "Action description",
-      "assignee": "Person name",
-      "priority": "High",
-      "dueDate": "2024-01-15"
-    }
-  ]
-}
-\`\`\`
-
-## External API Integration
-
-### Bhashini API
-- Speech-to-text transcription
-- Language translation
-- Multi-language support
-
-### OpenAI API
-- Text summarization
-- Action item extraction
-- Content analysis
-
-## Deployment
-
-### Render (Recommended)
-\`\`\`yaml
-# render.yaml
-services:
-  - type: web
-    name: meetingmind-backend
-    env: python
-    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
-    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 meeting_assistant.wsgi:application
-    envVars:
-      - key: DJANGO_SECRET_KEY
-        generateValue: true
-      - key: DEBUG
-        value: False
-\`\`\`
-
-### Railway
-\`\`\`toml
-# railway.toml
-[build]
-builder = "NIXPACKS"
-
-[deploy]
-startCommand = "python manage.py migrate && gunicorn meeting_assistant.wsgi:application"
-\`\`\`
-
-### Vercel
-\`\`\`json
-{
-  "builds": [
-    {
-      "src": "meeting_assistant/wsgi.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "meeting_assistant/wsgi.py"
-    }
-  ]
-}
-\`\`\`
-
-## Testing
-
-### Local Testing
-\`\`\`bash
-# Run development server
-python manage.py runserver
-
-# Test API endpoints
-curl http://localhost:8000/api/health/
-\`\`\`
-
-### Credential Testing
-\`\`\`bash
-# Test Bhashini credentials
-python test_bhashini_credentials.py
-
-# Test production setup
-python test_production_setup.py
-
-# Quick environment test
-python quick_test.py
-\`\`\`
-
-## Security
-
-### CORS Configuration
-```python
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "https://your-frontend.vercel.app",
-]
+---
+*Built by [Ritesh Roshan](https://github.com/riteshroshann).*
