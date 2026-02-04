@@ -21,7 +21,7 @@
 **MeetingMind** constructs a deterministic bridge between unstructured acoustic signals and structured interrogation. Operating as a **Neural Orchestration Engine**, the system ingests high-fidelity audio, normalizes it through a rigorous signal processing pipeline (`AudioProc`), and routes it through a distributed inference substrate comprising **Bhashini (Dhruva)** for phoneme-level ASR and **Gemini Pro** for semantic reasoning.
 
 The architecture solves for the **Multilingual Enterprise**, achieving:
-*   **Acoustic Fidelity**: $\approx$98% WER reduction on Indic dialects via specialized acoustic models.
+*   **Acoustic Fidelity**: **≈98% WER reduction** on Indic dialects via specialized acoustic models.
 *   **Semantic Synthesis**: Zero-shot action extraction utilizing Chain-of-Thought (CoT) prompting.
 *   **Humble Latency**: Optimized ingress/egress paths guaranteeing `O(1)` operational overhead relative to audio length.
 
@@ -30,10 +30,10 @@ The architecture solves for the **Multilingual Enterprise**, achieving:
 The system adheres to a strict **Hexagonal Architecture (Ports and Adapters)**, decoupling domain logic from the volatility of external neural providers.
 
 ### 2.1. The Signal Plane
-Audio input $\mathbf{x} \in \mathbb{R}^T$ is treated as a high-dimensional tensor. The pipeline enforces:
-1.  **Resampling**: $\mathcal{R}(\mathbf{x}) \to 16\text{kHz}$. All inputs are standardized to match the receptive field of Conformer-based acoustic models.
-2.  **Normalization**: $\hat{\mathbf{x}} = \frac{\mathbf{x} - \mu}{\sigma}$. Amplitude normalization maximizes Signal-to-Noise Ratio (SNR) prior to inference.
-3.  **Fail-Over heuristics**: A cascaded I/O strategy (`librosa` $\to$ `soundfile`) ensures robust tensor loading across heterogeneous container environments.
+Audio input **x ∈ Rᵀ** is treated as a high-dimensional tensor. The pipeline enforces:
+1.  **Resampling**: `R(x) → 16kHz`. All inputs are standardized to match the receptive field of Conformer-based acoustic models.
+2.  **Normalization**: `x̂ = (x - μ) / σ`. Amplitude normalization maximizes Signal-to-Noise Ratio (SNR) prior to inference.
+3.  **Fail-Over heuristics**: A cascaded I/O strategy (`librosa` → `soundfile`) ensures robust tensor loading across heterogeneous container environments.
 
 ### 2.2. The Neural Plane
 We orchestrate a tiered model ensemble:
