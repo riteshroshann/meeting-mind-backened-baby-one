@@ -129,18 +129,22 @@ python manage.py runserver
 
 ---
 
-### 5.4. Video Walkthrough
+### 5.4. Demonstration
 
 <div align="center">
   <a href="https://youtu.be/NT591v-rOj0">
-    <img src="https://img.youtube.com/vi/NT591v-rOj0/maxresdefault.jpg" alt="Watch the Video" width="100%">
+    <img src="https://img.youtube.com/vi/NT591v-rOj0/maxresdefault.jpg" alt="MeetingMind Demo" width="100%" style="border-radius: 10px; margin-bottom: 20px;">
   </a>
   <br>
-  <em><a href="https://youtu.be/NT591v-rOj0">Watch the Full Demonstration on YouTube</a></em>
+  <a href="https://youtu.be/NT591v-rOj0">
+    <b>▶&nbsp; Watch High-Fidelity Walkthrough (YouTube)</b>
+  </a>
 </div>
 
 <br>
+<hr>
+<br>
 
 <div align="center">
-  <em>Architected by <a href="https://github.com/riteshroshann">Ritesh Roshan</a>.</em>
+  <sub>Architected by <a href="https://github.com/riteshroshann">Ritesh Roshan</a>.</sub>
 </div>
