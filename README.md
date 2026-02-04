@@ -86,7 +86,7 @@ Translates internal domain objects into vendor-specific GRPC payloads.
 The diagram below illustrates the comprehensive state transition from raw acoustic pressure to structured semantic JSON, including error handling and state replication buffers.
 
 ```mermaid
-graph TD
+graph LR
     classDef core fill:#2d2d2d,stroke:#5a5a5a,color:#fff,stroke-width:2px
     classDef ext fill:#141414,stroke:#333,color:#888,stroke-dasharray: 5 5
     classDef io fill:#004488,stroke:#0066cc,color:#fff
